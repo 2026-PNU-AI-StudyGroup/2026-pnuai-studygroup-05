@@ -255,3 +255,12 @@ $RECYCLE.BIN/
 *.geojson
 
 # End of https://www.toptal.com/developers/gitignore/api/macos,windows,python,visualstudiocode
+
+# ── 프로젝트: 원천 데이터·산출물은 로컬 관리 (README 3.4 참조) ──
+# 개인정보(AED 관리자 실명·연락처) 및 대용량 방지. demo/ 의 공개 지도는 예외로 커밋.
+data/
+outputs/
+*.graphml
+*.parquet
+*.gpkg
+*.jsonl
