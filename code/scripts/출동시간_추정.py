@@ -255,7 +255,7 @@ def nearest_edge_access(G, oa):
 # ============================================================================
 # 4. 메인
 # ============================================================================
-def main(b_up=B_UP_PROVISIONAL, b_down=B_DOWN_PROVISIONAL, verbose=True):
+def main(b_up=B_UP_PROVISIONAL, b_down=B_DOWN_PROVISIONAL, verbose=True, write=True):
     if verbose:
         physics_check()
 
@@ -336,7 +336,8 @@ def main(b_up=B_UP_PROVISIONAL, b_down=B_DOWN_PROVISIONAL, verbose=True):
               "delay_t1_min", "delay_t2_min", "delay_t3_min",
               "p75_2026", "f_age", "f_reach", "f_reach_time",
               "risk_norm", "risk_norm_time"]].copy()
-    out.to_csv(OUT, index=False, encoding="utf-8-sig")
+    if write:                      # 민감도 반복 호출이 기준 산출물을 덮어쓰지 않게 한다
+        out.to_csv(OUT, index=False, encoding="utf-8-sig")
 
     if verbose:
         report(out, b_up, b_down)
@@ -390,7 +391,7 @@ def sensitivity():
     for b_up in [0.277, 0.489, 0.701]:
         for clip in [0.20, 0.25, 0.30]:
             GRADE_CLIP = clip
-            d = main(b_up=b_up, verbose=False)
+            d = main(b_up=b_up, verbose=False, write=False)
             rows.append(dict(b_up=b_up, clip=clip,
                              지연중앙=round(d.delay_min.median(), 2),
                              지연최대=round(d.delay_min.max(), 2),
@@ -407,6 +408,6 @@ def sensitivity():
 
 
 if __name__ == "__main__":
-    main()
-    sensitivity()
+    main()          # 기준 파라미터로 산출물 저장
+    sensitivity()   # 파라미터 변형 비교(저장하지 않음)
     print(f"\n저장: {OUT}")

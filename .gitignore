@@ -264,3 +264,7 @@ outputs/
 *.parquet
 *.gpkg
 *.jsonl
+
+# 공개용 데이터셋은 예외로 커밋한다(전처리 결과만·개인정보 0, README 3.4 참조)
+!github_data/
+!github_data/**
