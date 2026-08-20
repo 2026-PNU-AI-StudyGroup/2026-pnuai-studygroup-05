@@ -1,0 +1,35 @@
+# 산복도로 골든타임 프로젝트 — 분석 의존성
+# Python 3.10 이상 권장
+#   설치:  pip install -r requirements.txt
+#
+# ※ osmnx 는 2.x API(features_from_polygon)를 사용하므로 1.x 와 호환되지 않습니다.
+# ※ geopandas 1.x 는 shapely 2.x 를 요구합니다(STRtree 2.x API 사용).
+
+# --- 공간분석 ---
+osmnx>=2.0,<3.0
+geopandas>=1.0
+shapely>=2.0
+pyproj>=3.4
+
+# --- 그래프 / 수치 ---
+networkx>=3.0
+numpy>=1.24
+pandas>=2.0
+scipy>=1.11            # cKDTree, LinearNDInterpolator
+statsmodels>=0.14      # OLS 회귀 (네비게이션 경사계수 실측)
+
+# --- 입출력 ---
+pyarrow>=14.0          # parquet 읽기/쓰기
+requests>=2.31         # 공공데이터포털·NAVER API
+python-dotenv>=1.0     # .env 인증키 로드
+
+# --- 시각화 ---
+folium>=0.15
+branca>=0.7
+matplotlib>=3.7
+Pillow>=10.0
+
+# --- 노트북 실행 ---
+jupyter>=1.0
+nbconvert>=7.0
+nbformat>=5.9
