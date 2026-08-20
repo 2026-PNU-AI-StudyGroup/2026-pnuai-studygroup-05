@@ -2,17 +2,25 @@
 """축5 검증: 부산 119 소방출동정보 API로 동구 구급 출동을 동별 집계 → 우리 위험도와 대조"""
 import sys, time, re
 sys.stdout.reconfigure(encoding="utf-8")
+
+# ── 저장소 루트로 이동: 실행 위치와 무관하게 data/·outputs/ 상대경로 유지 ──
+import os
+from pathlib import Path
+for _c in [Path.cwd(), *Path.cwd().parents]:
+    if (_c / "README.md").exists() and (_c / ".gitignore").exists():
+        os.chdir(_c)
+        break
+
 import requests, pandas as pd, geopandas as gpd
 import xml.etree.ElementTree as ET
 
-BASE = r"C:\Users\doyun\켠김에왕까지_부산대이데대회"
 URL  = "https://apis.data.go.kr/6260000/Busan119InfoService/getTodayInfo"
 NUM  = 1000            # 페이지당 레코드
 N_PAGES = 40           # 최근 N페이지(≈4만건) 표본
 
 # --- 인증키(.env) ---
 key = None
-for line in open(BASE + r"\.env", encoding="utf-8"):
+for line in open(".env", encoding="utf-8"):
     if line.startswith("DATA_GO_KR_SERVICE_KEY"):
         key = line.split("=", 1)[1].strip()
 
@@ -60,7 +68,7 @@ c_all  = gugeup [gugeup ["dong"].isin(target)].groupby("dong").size().reindex(ta
 c_dis  = disease[disease["dong"].isin(target)].groupby("dong").size().reindex(target).fillna(0).astype(int)
 
 # --- 우리 위험도·인구와 대조 ---
-oa   = gpd.read_parquet(BASE + r"\outputs\oa_risk.parquet")
+oa   = gpd.read_parquet("outputs/oa_risk.parquet")
 risk = oa.groupby("dong")["risk_norm"].mean().reindex(target)
 p75  = oa.groupby("dong")["p75_2026"].sum().reindex(target)
 
@@ -77,6 +85,8 @@ print(f"  구급출동 ↔ 75+인구: {comp['구급출동'].corr(comp['75+인구
 print(f"  구급·질병 ↔ 위험도 : {comp['구급·질병'].corr(comp['위험도(우리)']):.3f}")
 
 # --- 저장 ---
-gugeup.to_csv(BASE + r"\pusan_data\119_동구_구급출동_표본.csv", index=False, encoding="utf-8-sig")
-comp.to_csv(BASE + r"\outputs\ax5_119_검증.csv", encoding="utf-8-sig")
+os.makedirs("pusan_data", exist_ok=True)
+os.makedirs("outputs", exist_ok=True)
+gugeup.to_csv("pusan_data/119_동구_구급출동_표본.csv", index=False, encoding="utf-8-sig")
+comp.to_csv("outputs/ax5_119_검증.csv", encoding="utf-8-sig")
 print("\n저장: pusan_data/119_동구_구급출동_표본.csv · outputs/ax5_119_검증.csv")

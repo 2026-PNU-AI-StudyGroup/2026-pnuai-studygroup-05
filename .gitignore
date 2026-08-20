@@ -260,7 +260,11 @@ $RECYCLE.BIN/
 # 개인정보(AED 관리자 실명·연락처) 및 대용량 방지. demo/ 의 공개 지도는 예외로 커밋.
 data/
 outputs/
+pusan_data/
 *.graphml
+
+# 제출물·개인정보: 동의서 서명본(실명·연락처)이 들어 있어 절대 커밋 금지
+docs/submissions/
 *.parquet
 *.gpkg
 *.jsonl

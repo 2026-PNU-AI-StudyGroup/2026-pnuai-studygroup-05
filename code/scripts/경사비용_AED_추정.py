@@ -1,10 +1,18 @@
 # -*- coding: utf-8 -*-
 """경사비용(오르막 페널티) 구현·검증 + 그 위에서 AED 후보 재산출 (실측 수치 확보용)"""
 import sys; sys.stdout.reconfigure(encoding="utf-8")
+
+# ── 저장소 루트로 이동: 실행 위치와 무관하게 data/·outputs/ 상대경로 유지 ──
+import os
+from pathlib import Path
+for _c in [Path.cwd(), *Path.cwd().parents]:
+    if (_c / "README.md").exists() and (_c / ".gitignore").exists():
+        os.chdir(_c)
+        break
+
 import numpy as np, pandas as pd, geopandas as gpd, networkx as nx, osmnx as ox
 from scipy.spatial import cKDTree
 
-BASE = r"C:\Users\doyun\켠김에왕까지_부산대이데대회"
 BETA = 6.0; R = 150; N_NEW = 15
 
 def _sf(x):
@@ -12,7 +20,7 @@ def _sf(x):
     except: return float("nan")
 
 # ---------- 1. 그래프 + 경사비용 엣지 가중 ----------
-G = ox.load_graphml(BASE + r"\outputs\graph_drive_conn.graphml",
+G = ox.load_graphml("outputs/graph_drive_conn.graphml",
                     edge_dtypes={"length": float, "grade": _sf}, node_dtypes={"elev": _sf})
 n_up = 0
 for u, v, k, d in G.edges(keys=True, data=True):
@@ -35,7 +43,7 @@ best_len   = multi_source_min("length")   # 기존(거리)
 best_cost  = multi_source_min("cost")      # 신규(경사비용 유효거리)
 
 # ---------- 2. 집계구에 부여 + 위험도 재계산 ----------
-oa = gpd.read_parquet(BASE + r"\outputs\oa_risk.parquet")
+oa = gpd.read_parquet("outputs/oa_risk.parquet")
 oa["reach_len"]   = oa["entry_node"].map(lambda n: best_len.get(n, np.nan))
 oa["reach_slope"] = oa["entry_node"].map(lambda n: best_cost.get(n, np.nan))
 oa["slope_ratio"] = oa["reach_slope"] / oa["reach_len"]     # 경사로 인한 유효거리 증가배율
@@ -62,7 +70,7 @@ for i in range(8):
     print(f"  {i+1}. 거리:{a.loc[i,'dong']}({a.loc[i,'TOT_OA_CD']})  |  경사:{b.loc[i,'dong']}({b.loc[i,'TOT_OA_CD']})")
 
 # ---------- 3. 경사비용 위험도 위에서 AED 후보(MCLP) 재산출 ----------
-aed = pd.read_csv(BASE + r"\outputs\aed_donggu.csv").dropna(subset=["wgs84Lat", "wgs84Lon"]).copy()
+aed = pd.read_csv("outputs/aed_donggu.csv").dropna(subset=["wgs84Lat", "wgs84Lon"]).copy()
 ag = gpd.GeoDataFrame(aed, geometry=gpd.points_from_xy(aed["wgs84Lon"], aed["wgs84Lat"]), crs=4326).to_crs(5186)
 def to_hhmm(v):
     try: return int(float(v))

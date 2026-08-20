@@ -1,14 +1,22 @@
 # -*- coding: utf-8 -*-
 """통합 지도: 집계구 위험도/인구 choropleth + 도로망 + AED(주야간) + 안전센터 + 병원 + MCLP 신규"""
+
+# ── 저장소 루트로 이동: 실행 위치와 무관하게 data/·outputs/ 상대경로 유지 ──
+import os
+from pathlib import Path
+for _c in [Path.cwd(), *Path.cwd().parents]:
+    if (_c / "README.md").exists() and (_c / ".gitignore").exists():
+        os.chdir(_c)
+        break
+
 import geopandas as gpd, pandas as pd, numpy as np, folium
 import branca.colormap as cm
 from folium import FeatureGroup, GeoJson, GeoJsonTooltip, CircleMarker, Marker, Icon, DivIcon
 
-BASE = r"C:\Users\doyun\켠김에왕까지_부산대이데대회"
-OUT  = BASE + r"\outputs\통합지도.html"
+OUT  = "outputs/통합지도.html"
 
 # ---------- 1. 집계구 (위험도 + 인구) ----------
-oa = gpd.read_parquet(BASE + r"\outputs\oa_risk.parquet").to_crs(4326)
+oa = gpd.read_parquet("outputs/oa_risk.parquet").to_crs(4326)
 oa["p75_2026"] = oa["p75_2026"].round(0)
 oa["risk_norm"] = oa["risk_norm"].round(3)
 oa["dist_station_m"] = oa["dist_station_m"].round(0)
@@ -61,7 +69,7 @@ fg_lbl.add_to(m)
 
 # ---------- 2. 도로망 (방향별 부호경사) ----------
 from shapely import offset_curve
-ep = gpd.read_file(BASE + r"\outputs\graph_drive_conn.gpkg", layer="edges")
+ep = gpd.read_file("outputs/graph_drive_conn.gpkg", layer="edges")
 if ep.crs is None:
     ep.set_crs(4326, inplace=True)
 ep = ep.to_crs(5186)                                   # 미터 좌표계에서 오프셋
@@ -146,7 +154,7 @@ fg_elev.add_to(m)
 import numpy as np
 from shapely.geometry import box
 from scipy.interpolate import griddata
-nodes = gpd.read_parquet(BASE + r"\outputs\nodes_drive_conn.parquet")   # 4,756 노드(EPSG:5186, elev)
+nodes = gpd.read_parquet("outputs/nodes_drive_conn.parquet")   # 4,756 노드(EPSG:5186, elev)
 npts = np.c_[nodes.geometry.x.values, nodes.geometry.y.values]
 nval = pd.to_numeric(nodes["elev"], errors="coerce").values
 minx, miny, maxx, maxy = study_buf.bounds
@@ -174,7 +182,7 @@ GeoJson(grid_ll[["elev", "geometry"]],
 fg_dem.add_to(m)
 
 # ---------- 3. AED (주간/야간) ----------
-aed = pd.read_csv(BASE + r"\outputs\aed_donggu.csv")
+aed = pd.read_csv("outputs/aed_donggu.csv")
 def is_night(row):
     s = str(row.get("monSttTme", "")).strip().replace(".0", "").zfill(4)
     e = str(row.get("monEndTme", "")).strip().replace(".0", "").zfill(4)
@@ -228,7 +236,7 @@ for nm, gr, lat, lon in hosp:
 fg_h.add_to(m)
 
 # ---------- 6. MCLP 신규 후보 15개 ----------
-mclp = pd.read_csv(BASE + r"\outputs\oa_mclp_new_aed.csv")
+mclp = pd.read_csv("outputs/oa_mclp_new_aed.csv")
 fg_m = FeatureGroup(name="⑧ MCLP 신규 AED 후보 (15)", show=True)
 for _, r in mclp.iterrows():
     Marker([r["lat"], r["lon"]],
@@ -241,7 +249,7 @@ fg_m.add_to(m)
 # ---------- 6b. AED 후보지 선정 알고리즘 시각화 (MCLP 커버리지) ----------
 # 야간 공백 집계구(고위험 & 야간 미커버) = MCLP의 '수요' → 신규 후보가 이걸 덮음
 try:
-    gap = gpd.read_parquet(BASE + r"\outputs\oa_gap.parquet").to_crs(4326)
+    gap = gpd.read_parquet("outputs/oa_gap.parquet").to_crs(4326)
     gapf = gap[gap["gap"] == True] if "gap" in gap.columns else gap.iloc[0:0]
     fg_gap = FeatureGroup(name="⑨ 야간 공백 집계구 (MCLP 수요)", show=True)
     GeoJson(gapf[["geometry"]], style_function=lambda f: {
