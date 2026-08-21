@@ -13,7 +13,8 @@ import geopandas as gpd, pandas as pd, numpy as np, folium
 import branca.colormap as cm
 from folium import FeatureGroup, GeoJson, GeoJsonTooltip, CircleMarker, Marker, Icon, DivIcon
 
-OUT  = "outputs/통합지도.html"
+OUT  = "results/통합지도.html"
+os.makedirs("results", exist_ok=True)
 
 # ---------- 1. 집계구 (위험도 + 인구) ----------
 oa = gpd.read_parquet("outputs/oa_risk.parquet").to_crs(4326)

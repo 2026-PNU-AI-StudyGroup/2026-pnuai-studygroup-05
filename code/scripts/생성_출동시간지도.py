@@ -6,7 +6,7 @@ docs/04 의 통합지도와 같은 folium 레이어 방식이며, 도달'거리'
 도달'시간'과 '지연'을 보여주는 것이 차이다.
 
 실행:  python code/scripts/생성_출동시간지도.py
-출력:  demo/출동시간지도.html
+출력:  results/출동시간지도.html
 """
 import os
 import sys
@@ -26,7 +26,7 @@ import folium
 import branca.colormap as cm
 from folium import FeatureGroup, GeoJson, GeoJsonTooltip, Marker, Icon
 
-OUT = "demo/출동시간지도.html"
+OUT = "results/출동시간지도.html"
 HOSPITALS = [("동아대학교병원", "권역", 129.017604, 35.120006),
              ("부산대학교병원", "지역", 129.019222, 35.101054),
              ("인제대학교부산백병원", "지역", 129.020572, 35.146454)]
@@ -116,7 +116,7 @@ def main():
     m.get_root().html.add_child(folium.Element(legend))
     folium.LayerControl(collapsed=False).add_to(m)
 
-    os.makedirs("demo", exist_ok=True)
+    os.makedirs("results", exist_ok=True)
     m.save(OUT)
     print(f"저장: {OUT}")
     print(f"  집계구 {len(g)}개 · 레이어 {len(layers)}개 + 안전센터 + 병원")
