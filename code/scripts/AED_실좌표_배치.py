@@ -166,8 +166,17 @@ def load_tracts():
     for sr in sf.iterShapeRecords():
         cx, cy = centroid(sr.shape.points, sr.shape.parts)
         lon, lat = tr.transform(cx, cy)
-        rows.append((str(sr.record["TOT_OA_CD"]), lon, lat))
-    return pd.DataFrame(rows, columns=["집계구코드", "oa_lon", "oa_lat"])
+        # 면적(ha) — 산지를 포함해 과대한 집계구는 중심점이 실거주지와 어긋난다
+        idx = list(sr.shape.parts) + [len(sr.shape.points)]
+        a = 0.0
+        for i in range(len(idx) - 1):
+            ring = np.asarray(sr.shape.points[idx[i]:idx[i + 1]], dtype=float)
+            if len(ring) < 3:
+                continue
+            X, Y = ring[:, 0], ring[:, 1]
+            a += abs(0.5 * np.sum(X * np.roll(Y, -1) - np.roll(X, -1) * Y))
+        rows.append((str(sr.record["TOT_OA_CD"]), lon, lat, a / 10_000))
+    return pd.DataFrame(rows, columns=["집계구코드", "oa_lon", "oa_lat", "면적_ha"])
 
 
 def load_demand():
@@ -178,6 +187,15 @@ def load_demand():
         raise SystemExit(f"좌표 조인 실패 {int(m.oa_lon.isna().sum())}건")
     # 요구 2: 구급차가 환자에게 닿는 시간 = t1(출동) + t2(들것 접근)
     m["도달_분"] = m["t1_출동_분"] + m["t2_접근_들것_분"]
+    # 산지를 포함한 초대형 집계구는 중심점이 무인 산지에 떨어져
+    # 도달시간이 과대추정되고 "반경 내 시설 없음"도 인위적으로 나온다.
+    # 배제하지 않고 표시만 해서 해석 시 주의하도록 남긴다.
+    med = m["면적_ha"].median()
+    m["산지포함_의심"] = m["면적_ha"] > med * 5
+    n = int(m["산지포함_의심"].sum())
+    if n:
+        print(f"[주의] 면적이 중앙값({med:.1f}ha)의 5배를 넘는 집계구 {n}개 — "
+              f"중심점이 산지에 있어 도달시간·시설공백이 과대평가될 수 있음")
     return m
 
 
@@ -360,7 +378,8 @@ def main():
     gap_share = gap.수요.sum() / live.수요.sum() * 100 if len(live) else 0.0
     gap_out = gap.sort_values("수요", ascending=False)[
         ["집계구코드", "행정동", "75세이상인구_2026", "t1_출동_분",
-         "t2_접근_들것_분", "도달_분", "초과_분", "수요", "oa_lon", "oa_lat"]]
+         "t2_접근_들것_분", "도달_분", "초과_분", "수요", "면적_ha",
+         "산지포함_의심", "oa_lon", "oa_lat"]]
     gap_out.to_csv("data/output/AED_시설공백_집계구.csv", index=False,
                    encoding="utf-8-sig")
 
@@ -422,7 +441,8 @@ def main():
     if len(gap):
         g = gap_out.head(10).copy()
         g["도달_분"] = g["도달_분"].round(1); g["수요"] = g["수요"].round(0)
-        print(g[["행정동", "75세이상인구_2026", "도달_분", "수요"]].to_string(index=False))
+        print(g[["행정동", "75세이상인구_2026", "도달_분", "수요", "면적_ha",
+                 "산지포함_의심"]].to_string(index=False))
         print(f"\n  동별 공백: {gap.행정동.value_counts().to_dict()}")
 
     print("\n" + "=" * 74)
