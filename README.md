@@ -318,7 +318,12 @@
 ```bash
 pip install -r requirements.txt
 ```
+**인증키 설정** — 저장소의 `.env.example`을 복사해 값만 채웁니다.
+```bash
+cp .env.example .env        # Windows: copy .env.example .env
+```
 - 공공데이터포털 **응급의료기관(15000563)·AED(15000652)** 인증키 — 반드시 **"일반 인증키(Decoding)"** 사용(Encoding 키는 이중 인코딩되어 오류). `.env`로 관리하며 **git에 올리지 않습니다.**
+- ⚠️ 값에 **따옴표를 쓰지 마세요** — 일부 스크립트가 단순 파싱하여 따옴표까지 키에 포함됩니다.
 - **NAVER Cloud Directions 5** 인증키 — 경사계수 실측용(축 2-1). 콘솔 → All Services → Application Services → Maps → Application 등록 시 **Directions 5** 선택. 위 공공데이터포털·SGIS 키와는 **별개 서비스**입니다.
   ```powershell
   $env:NCP_KEY_ID="Client ID" ; $env:NCP_KEY="Client Secret"
