@@ -191,7 +191,7 @@
 총시간은 좌천동이 가장 길지만(이송 거리), **지연은 초량6동이 가장 크다**(경사).
 
 - 📊 **결과 데이터:** [`github_data/집계구별_출동시간_지연.csv`](github_data/집계구별_출동시간_지연.csv) — 집계구 78개 × 17컬럼
-- 🗺️ **결과 지도:** [`demo/출동시간지도.html`](demo/출동시간지도.html) — 도달시간·지연·구간별 6개 레이어
+- 🗺️ **결과 지도:** [`results/출동시간지도.html`](results/출동시간지도.html) — 도달시간·지연·구간별 6개 레이어
 - 📄 **방법론:** [docs/05 출동시간 추정](docs/05_출동시간_추정.md)
 
 ##### ` 축 3 — 이송 목적지 · 완료 `
@@ -215,6 +215,7 @@
 ##### ` 최적배치 — MCLP · 완료 `
 - 수요 = 위험>0 & 야간 미커버 41개 집계구, 가중 = 위험도, 반경 150m.
 - **신규 15개로 위험가중 86% 커버**(초량6동 7·초량1동 3·좌천동 3·초량2동 2). 경사비용 위험도 위에서도 배분 견고(87%).
+- 📊 **후보 좌표:** [`github_data/AED_신규후보_15.csv`](github_data/AED_신규후보_15.csv) — 순위·행정동·집계구코드·75세+·위험도·경위도
 
 <br/>
 
@@ -260,10 +261,12 @@
 │   │   ├── 검증_네비게이션.py          # Directions 5 왕복 수집 → 경사계수 회귀
 │   │   └── 검증_119출동.py             # 축5 119 출동 기록 검증(수요)
 │   └── archive_100m격자/              # 구 100m 격자(추정) 라인 04·05·07·08·09 (대체됨)
-├── 🌐 demo/
+├── 🌐 results/
 │   ├── 통합지도.html                  # 인터랙티브 결과 지도(축1·3·4·6)
 │   └── 출동시간지도.html              # 도달시간·지연 지도(축 2-1)
 ├── 🌐 github_data/                    # 공개용 결과 데이터셋(전처리 결과만·개인정보 0)
+│   ├── 집계구별_출동시간_지연.csv       # 집계구 78개 × 17컬럼
+│   └── AED_신규후보_15.csv             # MCLP 선정 신규 AED 후보 15개
 │   └── 집계구별_출동시간_지연.csv      #   집계구 78 × 도달시간·지연·위험도
 ├── 💻 data/                           # 원천 데이터 (SGIS·jumin·소방청 등)
 ├── 💻 outputs/                        # 산출물(그래프·위험도·공백·지도)
@@ -335,7 +338,7 @@ jupyter nbconvert --to notebook --execute --inplace code/notebooks/01_병원API_
 
 **통합 지도 / 경사비용 재산출**
 ```bash
-python code/scripts/생성_통합지도.py        # → outputs/통합지도.html
+python code/scripts/생성_통합지도.py        # → results/통합지도.html
 python code/scripts/경사비용_AED_추정.py     # 경사비용(β=6) 도달지연·후보 비교
 ```
 
@@ -345,7 +348,7 @@ python code/scripts/출동시간_추정.py         # 물리검증 + 3구간 시�
 python code/scripts/검증_네비게이션.py --test      # 키·좌표순서 1건 확인 (권장)
 python code/scripts/검증_네비게이션.py             # OD 1,326건 수집 → 경사계수 회귀 (NCP 키 필요, 10~12분)
 python code/scripts/검증_네비게이션.py --regress-only   # 수집분으로 회귀만 재실행
-python code/scripts/생성_출동시간지도.py     # → demo/출동시간지도.html
+python code/scripts/생성_출동시간지도.py     # → results/출동시간지도.html
 ```
 > 수집 결과(`b_up`)는 이미 `출동시간_추정.py`의 `B_UP`에 반영되어 있다(0.489 s/m). 재수집이 필요할 때만 위 명령을 쓰면 되며, 중단되어도 재실행 시 `outputs/nav_raw.jsonl`에서 이어받는다.
 > ⚠ Directions 5는 `goal`에 목적지를 여러 개 넣어도 **경로를 1건만 반환**한다. 목적지별 결과가 필요하므로 1건씩 호출한다(`BATCH = 1`).
@@ -356,13 +359,13 @@ python code/scripts/생성_출동시간지도.py     # → demo/출동시간지�
 
 ## 5. 소개 및 시연 영상
 
-**인터랙티브 결과물:** [`demo/통합지도.html`](demo/통합지도.html) — 레이어 토글형 통합 지도.
+**인터랙티브 결과물:** [`results/통합지도.html`](results/통합지도.html) — 레이어 토글형 통합 지도.
 - **위험·수요:** ① 집계구 위험도 · ② 75+ 인구(라벨)
 - **도로·지형:** ③ 도로 경사(방향별) · 표고 격자(DEM 75m) — 고지대 취약성 시각화
 - **시설:** AED 야간/주간 · 안전센터 7곳 · 이송병원 3곳
 - **AED 후보지 알고리즘(MCLP):** ⑨ 야간 공백 집계구(수요, 빨강 면) → ⑩ 신규 후보 커버 150m(초록 원) → ⑪ 기존 야간AED 커버(파랑 원). **빨강 공백을 초록 원이 덮도록 후보를 고르는 과정**을 눈으로 확인할 수 있습니다.
 
-> 로컬 실행: `python code/scripts/생성_통합지도.py` → `outputs/통합지도.html`. 웹 열람은 GitHub Pages 또는 htmlpreview로 렌더링.
+> 로컬 실행: `python code/scripts/생성_통합지도.py` → `results/통합지도.html`. 웹 열람은 GitHub Pages 또는 htmlpreview로 렌더링.
 > 🎬 시연 영상: `작성 필요` — 발표 후 링크 삽입.
 
 <!-- [<img width="700px" alt="시연영상" src="썸네일_URL" />](YOUTUBE_URL) -->
