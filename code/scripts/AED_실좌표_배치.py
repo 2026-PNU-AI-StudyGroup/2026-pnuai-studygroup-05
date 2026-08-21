@@ -347,6 +347,40 @@ def main():
     gap_out.to_csv("data/output/AED_시설공백_집계구.csv", index=False,
                    encoding="utf-8-sig")
 
+    # ── 이전 MCLP 15개 집계구 → 실제 설치 가능 시설 매핑 ────────────────────
+    # 노트북 11 의 결과(AED_신규후보_15.csv)는 기존 설치 AED 106개의 야간 커버를
+    # 이미 제외하고 남은 고위험 집계구다. 즉 '기존 AED 배치를 존중한' 결과이므로
+    # 그대로 살리되, 집계구 중심이라는 한계만 실좌표로 바꿔준다.
+    prev = pd.read_csv("data/output/AED_신규후보_15.csv")
+    prev.columns = [c.strip().lstrip("\ufeff") for c in prev.columns]
+    prev["TOT_OA_CD"] = prev["TOT_OA_CD"].astype(str)
+    px, py = to_m.transform(prev.lon.values, prev.lat.values)
+    vpoi = poi[valid].reset_index(drop=True)
+    vt = cKDTree(np.c_[vpoi.x, vpoi.y])
+    snap = []
+    for i, r in enumerate(prev.itertuples()):
+        idxs = vt.query_ball_point((px[i], py[i]), R_COVER)
+        if idxs:
+            # 반경 안에서 야간접근(조치 후)이 가장 좋고, 그다음 가까운 시설
+            cand = vpoi.iloc[idxs].copy()
+            cand["거리_m"] = np.hypot(cand.x - px[i], cand.y - py[i])
+            cand = cand.sort_values(["야간접근_조치후", "거리_m"],
+                                    ascending=[False, True])
+            b = cand.iloc[0]
+            snap.append(dict(순위=r.rank, 행정동=r.dong, 집계구코드=r.TOT_OA_CD,
+                             위험도=r.risk_norm, 설치시설=b.이름, 시설유형=b.유형,
+                             야간접근_현재=b.야간접근_현재, 필요조치=b.필요조치,
+                             거리_m=round(b.거리_m, 1), lon=b.lon, lat=b.lat))
+        else:
+            snap.append(dict(순위=r.rank, 행정동=r.dong, 집계구코드=r.TOT_OA_CD,
+                             위험도=r.risk_norm, 설치시설="(반경 내 시설 없음)",
+                             시설유형="—", 야간접근_현재=np.nan,
+                             필요조치="★ 독립 함체 신설", 거리_m=np.nan,
+                             lon=r.lon, lat=r.lat))
+    snap = pd.DataFrame(snap)
+    snap.to_csv("data/output/AED_이전후보_실좌표매핑.csv", index=False,
+                encoding="utf-8-sig")
+
     os.makedirs("data/output", exist_ok=True)
     cols = ["순위", "이름", "유형", "행정동", "야간접근_현재", "야간접근_조치후",
             "필요조치", "커버수요", "커버수요수", "최근접집계구_m", "lon", "lat"]
@@ -373,7 +407,23 @@ def main():
         g["도달_분"] = g["도달_분"].round(1); g["수요"] = g["수요"].round(0)
         print(g[["행정동", "75세이상인구_2026", "도달_분", "수요"]].to_string(index=False))
         print(f"\n  동별 공백: {gap.행정동.value_counts().to_dict()}")
-    print(f"\n저장: {OUT_MAIN}\n      {OUT_ALL}\n      data/output/AED_시설공백_집계구.csv")
+
+    print("\n" + "=" * 74)
+    n_ok = int((snap.설치시설 != "(반경 내 시설 없음)").sum())
+    print(f"[이전 MCLP 15개 → 실좌표] 시설 매핑 {n_ok}/15 · 독립 함체 필요 {15-n_ok}")
+    print("  (이전 결과는 기존 설치 AED 106개의 야간 커버를 이미 제외한 것)")
+    print("=" * 74)
+    print(snap[["순위", "행정동", "설치시설", "시설유형", "필요조치",
+                "거리_m"]].to_string(index=False))
+    hit = snap[snap.설치시설 != "(반경 내 시설 없음)"]
+    uniq = hit.설치시설.nunique()
+    print(f"\n  실제 설치 지점 {uniq}개소로 {len(hit)}개 집계구 커버"
+          f"(같은 시설이 인접 집계구를 함께 덮음)")
+    need = snap[snap.설치시설 == "(반경 내 시설 없음)"]
+    if len(need):
+        print(f"  독립 함체 신설 {len(need)}개소 — 동별 "
+              f"{need.행정동.value_counts().to_dict()}")
+    print(f"\n저장: {OUT_MAIN}\n      {OUT_ALL}\n      data/output/AED_시설공백_집계구.csv\n      data/output/AED_이전후보_실좌표매핑.csv")
     return res
 
 
