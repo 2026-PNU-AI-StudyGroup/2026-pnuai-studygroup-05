@@ -267,6 +267,17 @@ def load_existing_aed(aed_osm):
 def main():
     dem = load_demand()
     poi, aed_osm = poi_frame(fetch_poi())
+
+    # 카카오 보강본이 있으면 그쪽을 후보 풀로 쓴다(OSM 병합본).
+    # OSM 단독은 한국 소규모 시설 등록률이 낮아 경로당이 1개만 잡힌다.
+    MERGED = "data/output/AED_후보시설_통합.csv"
+    if os.path.exists(MERGED):
+        mg = pd.read_csv(MERGED)
+        need = {"이름", "유형", "야간접근_현재", "야간접근_조치후", "필요조치", "lon", "lat"}
+        if need.issubset(mg.columns):
+            poi = mg[list(need)].copy()
+            poi["운영시간"] = ""
+            print(f"[POI] 카카오 보강본 사용: {len(poi)}건 (OSM 단독 대비 확대)")
     aed_xy, aed_src = load_existing_aed(aed_osm)
 
     # 미터 좌표계로 변환(거리 계산용)
