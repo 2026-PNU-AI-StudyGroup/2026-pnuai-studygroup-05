@@ -140,6 +140,20 @@ for t in ["Tier1","Tier2","Tier3"]:
     print(f"  +{t}({int((nw.유형==t).sum())}개): 75+ {now:.0f} · 순증 +{now-prev:.0f} · 누적Δ +{now-base:.0f}")
     prev = now
 
+print("\n[보수 시나리오] 실존시설(Tier1·2)만 vs 전체 — 야간")
+t12 = nw[nw.유형.isin(["Tier1","Tier2"])][["x","y","elev","night"]]
+for lab, df in [("기존106", aed),
+                ("기존+실존(T1·2,12곳)", pd.concat([aed, t12], ignore_index=True)),
+                ("기존+전체(36곳)", comb)]:
+    c = covered_mask(df, True); p = oa.p75_2026[c].sum()
+    print(f"  {lab:22s}: 75+ {p:5.0f}({p/tot*100:4.1f}%)")
+c12 = covered_mask(pd.concat([aed, t12], ignore_index=True), True)
+print("  형평성(실존만): ", end="")
+for thr in [4,6,8]:
+    v = oa["구급차도달_분"] > thr; nv = int(v.sum())
+    print(f">{thr}분 Δ{((c12&v).sum()-(cA&v).sum())/nv*100:+.0f}%p ", end="")
+print("← 8분초과=0%p면 신설 불가피")
+
 print("\n[역검증] 표고 중앙")
 if len(aed) and aed.night.any():
     print(f"  기존 야간AED {aed[aed.night].elev.median():.0f}m · 신규 {nw.elev.median():.0f}m · 고위험집계구 {oa.nlargest(20,'risk_norm').elev.median():.0f}m")
