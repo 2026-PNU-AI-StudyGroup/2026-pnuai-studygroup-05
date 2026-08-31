@@ -482,9 +482,7 @@ python code/scripts/평가_성능개선_지도.py    # → results/평가_커버
 - **AED 후보지 알고리즘(MCLP):** ⑨ 야간 공백 집계구(수요, 빨강 면) → ⑩ 신규 후보 커버 150m(초록 원) → ⑪ 기존 야간AED 커버(파랑 원). **빨강 공백을 초록 원이 덮도록 후보를 고르는 과정**을 눈으로 확인할 수 있습니다.
 
 > 로컬 실행: `python code/scripts/생성_통합지도.py` → `results/통합지도.html`. 웹 열람은 GitHub Pages 또는 htmlpreview로 렌더링.
-> 🎬 시연 영상: `작성 필요` — 발표 후 링크 삽입.
-
-<!-- [<img width="700px" alt="시연영상" src="썸네일_URL" />](YOUTUBE_URL) -->
+> 🎬 **소개 및 시연 영상:** [YouTube에서 보기](https://youtu.be/N-u5GrOrnw0)
 
 <br/>
 
